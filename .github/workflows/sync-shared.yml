@@ -1,6 +1,5 @@
 name: Sync Shared Databricks Repo
 
-# Trigger the workflow on push to main
 on:
   push:
     branches:
@@ -10,13 +9,23 @@ jobs:
   update-shared:
     runs-on: ubuntu-latest
     steps:
-      - name: Pull latest main into Shared repo
+      - name: Update Shared repo to main
         run: |
           echo "Updating Databricks Shared repo to latest main branch..."
           curl -X PATCH $DATABRICKS_HOST/api/2.0/repos/$REPO_ID \
             -H "Authorization: Bearer $DATABRICKS_TOKEN" \
             -H "Content-Type: application/json" \
             -d '{"branch":"main"}'
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          REPO_ID: <YOUR_REPO_ID_HERE>
+
+      - name: Refresh Shared repo to pull latest files
+        run: |
+          echo "Refreshing Databricks Shared repo to sync files..."
+          curl -X POST $DATABRICKS_HOST/api/2.0/repos/$REPO_ID/refresh \
+            -H "Authorization: Bearer $DATABRICKS_TOKEN"
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
