@@ -1,4 +1,4 @@
-name: Sync Shared Databricks Repo
+name: Deploy to Shared Workspace
 
 on:
   push:
@@ -6,27 +6,29 @@ on:
       - main
 
 jobs:
-  update-shared:
+  deploy-shared:
     runs-on: ubuntu-latest
     steps:
-      - name: Update Shared repo to main
-        run: |
-          echo "Updating Databricks Shared repo to latest main branch..."
-          curl -X PATCH $DATABRICKS_HOST/api/2.0/repos/$REPO_ID \
-            -H "Authorization: Bearer $DATABRICKS_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d '{"branch":"main"}'
-        env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-          REPO_ID: <YOUR_REPO_ID_HERE>
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-      - name: Refresh Shared repo to pull latest files
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dbx
+        run: pip install dbx
+
+      - name: Deploy to Shared workspace
         run: |
-          echo "Refreshing Databricks Shared repo to sync files..."
-          curl -X POST $DATABRICKS_HOST/api/2.0/repos/$REPO_ID/refresh \
-            -H "Authorization: Bearer $DATABRICKS_TOKEN"
+          dbx deploy \
+            --environment default \
+            --workspace-path $DATABRICKS_WORKSPACE_PATH \
+            --overwrite \
+            --token $DATABRICKS_TOKEN \
+            --host $DATABRICKS_HOST
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-          REPO_ID: 1784572237686335
+          DATABRICKS_WORKSPACE_PATH: /Shared/dbx_free
